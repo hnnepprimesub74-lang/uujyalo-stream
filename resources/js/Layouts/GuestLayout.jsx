@@ -1,0 +1,21 @@
+import { Head, Link } from '@inertiajs/react';
+import Logo from '@/Components/Logo';
+
+export default function GuestLayout({ title, children }) {
+    return (
+        <div className="font-sans text-neutral-100 antialiased bg-neutral-950 min-h-screen ambient-glow">
+            <Head title={title} />
+
+            <div className="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 px-4">
+                <Link href={route('home')} className="flex items-center gap-2">
+                    <Logo className="w-12 h-12 shadow-glass-sm rounded-xl" />
+                    <span className="font-extrabold text-2xl tracking-tight">Uujyalo Stream</span>
+                </Link>
+
+                <div className="w-full sm:max-w-md mt-6 px-6 py-6 glass-panel rounded-glass overflow-hidden animate-glass-in">
+                    {children}
+                </div>
+            </div>
+        </div>
+    );
+}

@@ -1,20 +1,47 @@
 <x-filament-panels::page>
-    <div class="flex gap-2 flex-wrap mb-4">
-        @forelse ($this->getProducts() as $product)
+    <div class="sticky top-0 z-30 -mx-6 px-6 py-3 mb-2 bg-white dark:bg-gray-950 border-b border-gray-100 dark:border-white/5">
+        <div class="flex gap-2 flex-wrap">
             <button
                 type="button"
-                wire:click="selectProduct('{{ $product->slug }}')"
+                wire:click="selectProduct('{{ \App\Filament\Pages\Customers::ALL_SLUG }}')"
                 @class([
-                    'px-4 py-2 rounded-full text-sm font-bold transition',
-                    'bg-primary-600 text-white' => $productSlug === $product->slug,
-                    'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700' => $productSlug !== $product->slug,
+                    'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition shadow-sm',
+                    'bg-primary-600 text-white shadow-primary-600/30' => $this->isAllSelected(),
+                    'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10' => ! $this->isAllSelected(),
                 ])
             >
-                {{ $product->name }}
+                <x-heroicon-o-squares-2x2 class="w-4 h-4" />
+                All
+                <span @class([
+                    'text-xs px-1.5 py-0.5 rounded-full',
+                    'bg-white/20' => $this->isAllSelected(),
+                    'bg-gray-100 dark:bg-white/10' => ! $this->isAllSelected(),
+                ])>{{ $this->getAllOrdersCount() }}</span>
             </button>
-        @empty
-            <p class="text-sm text-gray-500">No products with active plans yet.</p>
-        @endforelse
+
+            @foreach ($this->getProducts() as $product)
+                <button
+                    type="button"
+                    wire:click="selectProduct('{{ $product->slug }}')"
+                    @class([
+                        'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition shadow-sm',
+                        'bg-primary-600 text-white shadow-primary-600/30' => $productSlug === $product->slug,
+                        'bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50 dark:bg-white/5 dark:text-white dark:ring-white/10 dark:hover:bg-white/10' => $productSlug !== $product->slug,
+                    ])
+                >
+                    {{ $product->name }}
+                    <span @class([
+                        'text-xs px-1.5 py-0.5 rounded-full',
+                        'bg-white/20' => $productSlug === $product->slug,
+                        'bg-gray-100 dark:bg-white/10' => $productSlug !== $product->slug,
+                    ])>{{ $this->getProductCustomerCount($product) }}</span>
+                </button>
+            @endforeach
+
+            @if ($this->getProducts()->isEmpty())
+                <p class="text-sm text-gray-500">No products with active plans yet.</p>
+            @endif
+        </div>
     </div>
 
     <div

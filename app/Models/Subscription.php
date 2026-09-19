@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 class Subscription extends Model
@@ -19,9 +20,9 @@ class Subscription extends Model
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'user_id', 'plan_id', 'sale_source_id', 'shared_account_id', 'slots_used', 'status', 'starts_at', 'expires_at',
+        'order_number', 'user_id', 'plan_id', 'sale_source_id', 'shared_account_id', 'slots_used', 'status', 'starts_at', 'expires_at',
         'account_email', 'account_password',
-        'amount', 'credit_due', 'total_days', 'days_recharged', 'last_recharge_date', 'next_recharge_date',
+        'amount', 'coupon_code', 'discount_amount', 'credit_due', 'total_days', 'days_recharged', 'last_recharge_date', 'next_recharge_date',
         'admin_note', 'expiring_reminder_sent', 'expired_reminder_sent',
     ];
 
@@ -31,6 +32,7 @@ class Subscription extends Model
         'last_recharge_date' => 'date',
         'next_recharge_date' => 'date',
         'amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'credit_due' => 'decimal:2',
         'account_email' => 'encrypted',
         'account_password' => 'encrypted',
@@ -40,6 +42,10 @@ class Subscription extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Subscription $subscription) {
+            $subscription->order_number ??= static::generateOrderNumber();
+        });
+
         static::saving(function (Subscription $subscription) {
             $plan = $subscription->plan ?? Plan::find($subscription->plan_id);
 
@@ -47,6 +53,20 @@ class Subscription extends Model
                 $subscription->slots_used = $plan->device_slots;
             }
         });
+    }
+
+    /**
+     * A short 5-digit order id, derived from the current date/time (plus a
+     * random jitter to avoid collisions within the same second).
+     */
+    public static function generateOrderNumber(): string
+    {
+        do {
+            $seed = now()->format('YmdHis').random_int(0, 999);
+            $candidate = str_pad((string) (crc32($seed) % 100000), 5, '0', STR_PAD_LEFT);
+        } while (static::where('order_number', $candidate)->exists());
+
+        return $candidate;
     }
 
     public function user(): BelongsTo
@@ -92,6 +112,16 @@ class Subscription extends Model
     public function rechargeLogs(): HasMany
     {
         return $this->hasMany(RechargeLog::class);
+    }
+
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    public function originalAmount(): float
+    {
+        return (float) $this->amount + (float) $this->discount_amount;
     }
 
     public function isActive(): bool

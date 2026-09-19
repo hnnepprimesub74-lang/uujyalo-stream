@@ -45,6 +45,8 @@ class HandleInertiaRequests extends Middleware
                 'status' => fn () => $request->session()->get('status'),
             ],
             'whatsappNumber' => fn () => AppSetting::get('whatsapp_number'),
+            'supportEmail' => fn () => AppSetting::get('support_email'),
+            'supportPhone' => fn () => AppSetting::get('support_phone'),
         ];
     }
 }

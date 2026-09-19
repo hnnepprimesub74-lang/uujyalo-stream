@@ -72,7 +72,7 @@ export default function Navbar() {
 
                     {auth?.user ? (
                         <Link
-                            href={route('dashboard')}
+                            href={route('profile.edit')}
                             className="glass-btn-base flex items-center gap-2 rounded-full bg-brand-500 border border-white/20 hover:bg-brand-600 text-white pl-3 pr-1.5 py-1.5 text-sm font-bold flex-shrink-0"
                         >
                             <span className="hidden sm:inline">My Account</span>

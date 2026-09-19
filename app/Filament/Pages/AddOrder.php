@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Mail\AccountReadyMail;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\SaleSource;
@@ -18,6 +19,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 
@@ -262,6 +264,7 @@ class AddOrder extends Page implements HasForms
         }
 
         $plan = Plan::findOrFail($data['plan_id']);
+        $accountWasNotReadyYet = $existingSubscription !== null && $existingSubscription->starts_at === null;
         $startsAt = $existingSubscription?->starts_at ?? now();
         $totalDays = ($existingSubscription && $existingSubscription->plan_id === $plan->id && $existingSubscription->total_days)
             ? $existingSubscription->total_days
@@ -320,6 +323,10 @@ class AddOrder extends Page implements HasForms
 
         if (! empty($data['recharge_card_amount'])) {
             $rechargeService->applyRecharge($subscription, (float) $data['recharge_card_amount']);
+        }
+
+        if (($accountWasNotReadyYet || ! $existingSubscription) && ! str_ends_with((string) $user->email, '@no-email.local')) {
+            Mail::to($user->email)->send(new AccountReadyMail($subscription));
         }
 
         Notification::make()

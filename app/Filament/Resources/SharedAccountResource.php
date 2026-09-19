@@ -82,7 +82,7 @@ class SharedAccountResource extends Resource
             ->columns([
                 TextColumn::make('product.name')->label('Product')->badge()->sortable(),
                 TextColumn::make('email')->label('Account Email')->copyable()->searchable(false),
-                TextColumn::make('password')->label('Account Password')->copyable()->searchable(false),
+                TextColumn::make('password')->label('Password')->copyable()->searchable(false),
                 TextColumn::make('slots')
                     ->label('Slots Used')
                     ->getStateUsing(fn (SharedAccount $record) => $record->usedSlots().' / '.$record->max_slots)

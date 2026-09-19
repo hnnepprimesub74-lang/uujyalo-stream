@@ -36,6 +36,7 @@ class SubscriptionTableActions
                 Section::make('Order')
                     ->columns(3)
                     ->schema([
+                        TextEntry::make('order_number')->label('Order ID')->copyable(),
                         TextEntry::make('plan.product.name')->label('Product'),
                         TextEntry::make('plan.full_name')->label('Plan'),
                         TextEntry::make('saleSource.name')->label('Source')->default('—'),

@@ -80,7 +80,7 @@ class Accounts extends Page implements HasTable
             ->query(SharedAccount::query()->where('product_id', $productId))
             ->columns([
                 TextColumn::make('email')->label('Account Email')->copyable()->searchable(false),
-                TextColumn::make('password')->label('Account Password')->copyable()->searchable(false),
+                TextColumn::make('password')->label('Password')->copyable()->searchable(false),
                 TextColumn::make('slots')
                     ->label('Slots Used')
                     ->getStateUsing(fn (SharedAccount $record) => $record->usedSlots().' / '.$record->max_slots)

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Pages\AddOrder;
 use App\Filament\Resources\PaymentProofResource\Pages;
+use App\Mail\AccountReadyMail;
 use App\Mail\PaymentProofApprovedMail;
 use App\Mail\PaymentProofNeedsInfoMail;
 use App\Mail\PaymentProofRejectedMail;
@@ -77,13 +78,13 @@ class PaymentProofResource extends Resource
             ->columns([
                 TextColumn::make('user.name')->searchable()->sortable(),
                 TextColumn::make('user.phone')->label('Phone')->searchable(),
-                TextColumn::make('subscription.plan.full_name')->label('Plan'),
+                TextColumn::make('subscription.plan.full_name')->label('Plan')->wrap(),
                 TextColumn::make('subscription.amount')->label('Amount')->money('NPR'),
-                TextColumn::make('payment_method'),
-                TextColumn::make('reference_no'),
+                TextColumn::make('reference_no')->label('Ref. No'),
                 ImageColumn::make('screenshot_path')
                     ->label('Proof')
                     ->disk('public')
+                    ->size(40)
                     ->action(Action::make('viewDetails'))
                     ->extraImgAttributes(['class' => 'cursor-zoom-in']),
                 BadgeColumn::make('status')->colors([
@@ -92,7 +93,7 @@ class PaymentProofResource extends Resource
                     'danger' => PaymentProof::STATUS_REJECTED,
                     'info' => PaymentProof::STATUS_NEEDS_INFO,
                 ]),
-                TextColumn::make('created_at')->dateTime()->sortable(),
+                TextColumn::make('created_at')->label('Created')->dateTime('M j, g:i A')->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -104,83 +105,6 @@ class PaymentProofResource extends Resource
                 ]),
             ])
             ->actions([
-                Action::make('viewDetails')
-                    ->label('View Details')
-                    ->icon('heroicon-o-eye')
-                    ->color('gray')
-                    ->modalHeading(fn (PaymentProof $record) => "Payment Proof — {$record->user->name}")
-                    ->modalSubmitActionLabel('Save Reference No')
-                    ->modalCancelActionLabel('Close')
-                    ->modalWidth('4xl')
-                    ->form([
-                        Placeholder::make('summary')
-                            ->label('')
-                            ->content(function (PaymentProof $record) {
-                                $rows = [
-                                    'Customer' => $record->user->name,
-                                    'Phone' => $record->user->phone,
-                                    'Email' => $record->user->email,
-                                    'Product' => $record->subscription->plan->product?->name,
-                                    'Plan' => $record->subscription->plan->full_name,
-                                    'Amount' => 'NPR '.number_format($record->subscription->amount, 2),
-                                    'Payment Method' => $record->payment_method,
-                                    'Status' => $record->status,
-                                    'Submitted At' => $record->created_at->format('M j, Y g:i A'),
-                                ];
-
-                                $html = '<div class="grid grid-cols-3 gap-x-4 gap-y-3 text-sm">';
-
-                                foreach ($rows as $label => $value) {
-                                    $html .= '<div><div class="text-gray-500 dark:text-gray-400">'.e($label).'</div>'
-                                        .'<div class="font-medium text-gray-950 dark:text-white">'.e($value ?? '—').'</div></div>';
-                                }
-
-                                $html .= '</div>';
-
-                                return new HtmlString($html);
-                            }),
-                        TextInput::make('reference_no')
-                            ->label('Reference / Transaction No.')
-                            ->helperText('Check the screenshot(s) below and fill this in if the customer left it blank.'),
-                        Placeholder::make('screenshots')
-                            ->label('')
-                            ->content(function (PaymentProof $record) {
-                                $paths = array_filter([$record->screenshot_path, $record->screenshot_path_2]);
-
-                                $html = '<div class="space-y-4">';
-
-                                foreach ($paths as $i => $path) {
-                                    $url = Storage::disk('public')->url($path);
-                                    $html .= '<a href="'.e($url).'" target="_blank" rel="noopener">'
-                                        .'<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Screenshot '.($i + 1).' (click to open full size)</div>'
-                                        .'<img src="'.e($url).'" class="w-full rounded-lg border border-gray-300 dark:border-gray-700 cursor-zoom-in" />'
-                                        .'</a>';
-                                }
-
-                                $html .= '</div>';
-
-                                return new HtmlString($html);
-                            }),
-                        Placeholder::make('customer_note')
-                            ->label('Note from Customer')
-                            ->content(fn (PaymentProof $record) => $record->customer_note ?: '—')
-                            ->visible(fn (PaymentProof $record) => filled($record->customer_note)),
-                        Placeholder::make('note')
-                            ->label('Admin Note')
-                            ->content(fn (PaymentProof $record) => $record->note ?: '—')
-                            ->visible(fn (PaymentProof $record) => filled($record->note)),
-                    ])
-                    ->fillForm(fn (PaymentProof $record) => [
-                        'reference_no' => $record->reference_no,
-                    ])
-                    ->action(function (PaymentProof $record, array $data) {
-                        $record->update(['reference_no' => $data['reference_no']]);
-
-                        Notification::make()
-                            ->title('Reference number saved')
-                            ->success()
-                            ->send();
-                    }),
                 Action::make('approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -223,6 +147,8 @@ class PaymentProofResource extends Resource
                             'expired_reminder_sent' => false,
                         ]);
 
+                        $accountAssignedNow = false;
+
                         if ($isSharedAccount) {
                             $slotsUsed = $plan->device_slots ?? 1;
 
@@ -242,6 +168,8 @@ class PaymentProofResource extends Resource
                                     'days_recharged' => $totalDays,
                                     'next_recharge_date' => null,
                                 ]);
+
+                                $accountAssignedNow = true;
                             } else {
                                 $subscription->update(['slots_used' => $slotsUsed]);
 
@@ -255,6 +183,10 @@ class PaymentProofResource extends Resource
 
                         Mail::to($subscription->user->email)->send(new PaymentProofApprovedMail($subscription));
 
+                        if ($accountAssignedNow) {
+                            Mail::to($subscription->user->email)->send(new AccountReadyMail($subscription));
+                        }
+
                         if (! $isSharedAccount) {
                             Notification::make()
                                 ->title('Approved — now create the order')
@@ -264,6 +196,84 @@ class PaymentProofResource extends Resource
 
                             return redirect(AddOrder::getUrl(['subscriptionId' => $subscription->id]));
                         }
+                    }),
+                \Filament\Tables\Actions\ActionGroup::make([
+                Action::make('viewDetails')
+                    ->label('View Details')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->modalHeading(fn (PaymentProof $record) => "Payment Proof — {$record->user->name}")
+                    ->modalSubmitActionLabel('Save Reference No')
+                    ->modalCancelActionLabel('Close')
+                    ->modalWidth('4xl')
+                    ->form([
+                        Placeholder::make('summary')
+                            ->label('')
+                            ->content(function (PaymentProof $record) {
+                                $rows = [
+                                    'Customer' => $record->user->name,
+                                    'Phone' => $record->user->phone,
+                                    'Email' => $record->user->email,
+                                    'Product' => $record->subscription->plan->product?->name,
+                                    'Plan' => $record->subscription->plan->full_name,
+                                    'Amount' => 'NPR '.number_format($record->subscription->amount, 2),
+                                    'Payment Method' => $record->payment_method,
+                                    'Status' => $record->status,
+                                    'Submitted At' => $record->created_at->format('M j, Y g:i A'),
+                                ];
+
+                                $html = '<div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm rounded-lg bg-gray-50 dark:bg-white/5 p-4">';
+
+                                foreach ($rows as $label => $value) {
+                                    $html .= '<div><div class="text-xs text-gray-500 dark:text-gray-400">'.e($label).'</div>'
+                                        .'<div class="font-medium text-gray-950 dark:text-white">'.e($value ?? '—').'</div></div>';
+                                }
+
+                                $html .= '</div>';
+
+                                return new HtmlString($html);
+                            }),
+                        TextInput::make('reference_no')
+                            ->label('Reference / Transaction No.')
+                            ->helperText('Check the screenshot(s) below and fill this in if the customer left it blank.'),
+                        Placeholder::make('screenshots')
+                            ->label('')
+                            ->content(function (PaymentProof $record) {
+                                $paths = array_filter([$record->screenshot_path, $record->screenshot_path_2]);
+
+                                $html = '<div class="flex flex-wrap gap-4">';
+
+                                foreach ($paths as $i => $path) {
+                                    $url = Storage::disk('public')->url($path);
+                                    $html .= '<a href="'.e($url).'" target="_blank" rel="noopener" class="block">'
+                                        .'<div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Screenshot '.($i + 1).' — click to enlarge</div>'
+                                        .'<img src="'.e($url).'" style="max-height:500px" class="w-auto rounded-lg border border-gray-300 dark:border-gray-700 cursor-zoom-in object-contain" />'
+                                        .'</a>';
+                                }
+
+                                $html .= '</div>';
+
+                                return new HtmlString($html);
+                            }),
+                        Placeholder::make('customer_note')
+                            ->label('Note from Customer')
+                            ->content(fn (PaymentProof $record) => $record->customer_note ?: '—')
+                            ->visible(fn (PaymentProof $record) => filled($record->customer_note)),
+                        Placeholder::make('note')
+                            ->label('Admin Note')
+                            ->content(fn (PaymentProof $record) => $record->note ?: '—')
+                            ->visible(fn (PaymentProof $record) => filled($record->note)),
+                    ])
+                    ->fillForm(fn (PaymentProof $record) => [
+                        'reference_no' => $record->reference_no,
+                    ])
+                    ->action(function (PaymentProof $record, array $data) {
+                        $record->update(['reference_no' => $data['reference_no']]);
+
+                        Notification::make()
+                            ->title('Reference number saved')
+                            ->success()
+                            ->send();
                     }),
                 Action::make('requestInfo')
                     ->label('Request Info')
@@ -313,6 +323,10 @@ class PaymentProofResource extends Resource
 
                         Mail::to($record->user->email)->send(new PaymentProofRejectedMail($record));
                     }),
+                ])
+                    ->label('Actions')
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->size('sm'),
             ]);
     }
 

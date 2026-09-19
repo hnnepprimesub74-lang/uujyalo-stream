@@ -106,7 +106,7 @@ export default function Register({ phone_exists: phoneExistsFlash }) {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email (optional)" />
+                    <InputLabel htmlFor="email" value="Email" />
                     <TextInput
                         id="email"
                         className="block mt-1 w-full"
@@ -114,6 +114,7 @@ export default function Register({ phone_exists: phoneExistsFlash }) {
                         name="email"
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
+                        required
                         autoComplete="username"
                     />
                     <InputError message={errors.email} className="mt-2" />

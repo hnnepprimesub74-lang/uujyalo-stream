@@ -45,7 +45,9 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Subscriptions'),
                 NavigationGroup::make('Catalog Setup')->collapsed(),
+                NavigationGroup::make('Marketing'),
             ])
+            ->sidebarCollapsibleOnDesktop()
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

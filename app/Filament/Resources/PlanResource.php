@@ -101,6 +101,13 @@ class PlanResource extends Resource
                     TextInput::make('feature')->required()
                 )
                 ->columnSpanFull(),
+            Repeater::make('usage_rules')
+                ->label('Usage Rules')
+                ->helperText('Shown to the customer on their "My Orders" page for this plan, e.g. device limits or account restrictions.')
+                ->simple(
+                    TextInput::make('rule')->required()
+                )
+                ->columnSpanFull(),
             TextInput::make('sort_order')
                 ->numeric()
                 ->default(0),

@@ -14,14 +14,20 @@ class EditSubscription extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()
+                ->successRedirectUrl(fn () => $this->getProductRedirectUrl()),
         ];
     }
 
     protected function getRedirectUrl(): string
     {
+        return $this->getProductRedirectUrl();
+    }
+
+    protected function getProductRedirectUrl(): string
+    {
         $product = $this->record->plan?->product;
 
-        return $product ? Customers::getUrl(['productSlug' => $product->slug]) : $this->getResource()::getUrl('index');
+        return Customers::getUrl($product ? ['productSlug' => $product->slug] : []);
     }
 }

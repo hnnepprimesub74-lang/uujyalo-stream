@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeMail;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -36,7 +38,7 @@ class RegisteredUserController extends Controller
         $request->validate([
             'phone' => ['required', 'string', 'max:20'],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -46,19 +48,17 @@ class RegisteredUserController extends Controller
                 ->with('phone_exists', $request->phone);
         }
 
-        $email = $request->filled('email')
-            ? $request->email
-            : preg_replace('/\D/', '', $request->phone).'@no-email.local';
-
         $user = User::create([
             'name' => $request->name,
-            'email' => $email,
+            'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => User::ROLE_CUSTOMER,
         ]);
 
         event(new Registered($user));
+
+        Mail::to($user->email)->send(new WelcomeMail($user));
 
         Auth::login($user);
 

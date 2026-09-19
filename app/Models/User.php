@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser
         'role',
         'phone',
         'is_active',
+        'marketing_opt_out',
     ];
 
     /**
@@ -53,6 +54,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'marketing_opt_out' => 'boolean',
         ];
     }
 

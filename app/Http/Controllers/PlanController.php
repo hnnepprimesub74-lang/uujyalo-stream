@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Banner;
 use App\Models\Product;
+use App\Models\Review;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -44,6 +45,23 @@ class PlanController extends Controller
             ->take(4)
             ->values();
 
-        return Inertia::render('Products/Show', compact('product', 'relatedProducts'));
+        $reviewsQuery = Review::where('product_id', $product->id);
+
+        $reviewsCount = (clone $reviewsQuery)->count();
+        $reviewsAvg = $reviewsCount > 0 ? round((clone $reviewsQuery)->avg('rating'), 1) : null;
+
+        $reviews = $reviewsQuery
+            ->with('user')
+            ->latest()
+            ->paginate(5)
+            ->through(fn (Review $review) => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'reviewer_name' => $review->user->name,
+                'created_at' => $review->created_at->format('M j, Y'),
+            ]);
+
+        return Inertia::render('Products/Show', compact('product', 'relatedProducts', 'reviews', 'reviewsCount', 'reviewsAvg'));
     }
 }

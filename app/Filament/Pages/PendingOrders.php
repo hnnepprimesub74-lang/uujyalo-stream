@@ -63,13 +63,14 @@ class PendingOrders extends Page implements HasTable
             ->description('Payment has been verified for these private-account orders, but the account still needs to be created and confirmed. The customer\'s email/password from checkout is prefilled on "Create Order".')
             ->defaultSort('created_at', 'desc')
             ->columns([
+                TextColumn::make('order_number')->label('Order ID')->copyable()->searchable(),
                 TextColumn::make('user.name')->label('Customer')->searchable(),
                 TextColumn::make('user.phone')->label('Phone')->searchable(),
                 TextColumn::make('plan.product.name')->label('Product')->badge(),
                 TextColumn::make('plan.full_name')->label('Plan'),
                 TextColumn::make('amount')->label('Amount')->money('NPR'),
                 TextColumn::make('account_email')->label('Account Email')->copyable()->placeholder('—'),
-                TextColumn::make('account_password')->label('Account Password')->copyable()->placeholder('—'),
+                TextColumn::make('account_password')->label('Password')->copyable()->placeholder('—'),
                 TextColumn::make('created_at')->label('Approved')->dateTime()->sortable(),
             ])
             ->actions([

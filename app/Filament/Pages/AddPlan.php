@@ -90,6 +90,13 @@ class AddPlan extends Page implements HasForms
                 ->label('Supported Devices')
                 ->helperText('Optional, e.g. "Phone, Tablet" or "TV, Mobile, Laptop" — shared across all durations for this tier.')
                 ->maxLength(100),
+            Repeater::make('usage_rules')
+                ->label('Usage Rules')
+                ->helperText('Shown to the customer on their "My Orders" page, e.g. device limits or account restrictions — shared across all durations for this tier.')
+                ->simple(
+                    TextInput::make('rule')->required()
+                )
+                ->columnSpanFull(),
             Repeater::make('tiers')
                 ->label('Durations & Pricing')
                 ->schema([
@@ -158,6 +165,7 @@ class AddPlan extends Page implements HasForms
                 'device_label' => $data['device_label'] ?? null,
                 'quality' => $data['quality'] ?? null,
                 'supported_devices' => $data['supported_devices'] ?? null,
+                'usage_rules' => $data['usage_rules'] ?? null,
                 'price' => $tier['price'],
                 'monthly_cost' => $data['monthly_cost'],
                 'sort_order' => $index,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import CustomerLayout from '@/Layouts/CustomerLayout';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
@@ -44,6 +44,28 @@ export default function Pay({ subscription, instructions, qrCodeUrl, needsInfoNo
         });
     };
 
+    const couponForm = useForm({ code: '' });
+    const [removingCoupon, setRemovingCoupon] = useState(false);
+
+    const applyCoupon = (e) => {
+        e.preventDefault();
+        couponForm.post(route('subscriptions.coupon.store', subscription.id), {
+            preserveScroll: true,
+            onSuccess: () => couponForm.reset(),
+        });
+    };
+
+    const removeCoupon = () => {
+        setRemovingCoupon(true);
+        router.delete(route('subscriptions.coupon.destroy', subscription.id), {
+            preserveScroll: true,
+            onFinish: () => setRemovingCoupon(false),
+        });
+    };
+
+    const originalAmount = Number(subscription.amount) + Number(subscription.discount_amount ?? 0);
+    const hasDiscount = Number(subscription.discount_amount ?? 0) > 0;
+
     return (
         <CustomerLayout title="Complete Your Payment">
             <div className="max-w-xl mx-auto">
@@ -65,9 +87,56 @@ export default function Pay({ subscription, instructions, qrCodeUrl, needsInfoNo
             <div className="rounded-2xl glass-panel p-4 mb-4">
                 <p className="font-semibold">{subscription.plan.full_name}</p>
                 <p className="text-sm text-neutral-400 mt-0.5">{subscription.plan.duration_days} days access</p>
-                <p className="text-green-400 font-extrabold text-xl mt-2">
-                    NPR {Number(subscription.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </p>
+
+                {hasDiscount ? (
+                    <div className="mt-2">
+                        <p className="text-sm text-neutral-500 line-through">
+                            NPR {originalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-green-400 font-extrabold text-xl">
+                            NPR {Number(subscription.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-emerald-400 font-semibold mt-0.5">
+                            Coupon "{subscription.coupon_code}" applied — you saved NPR{' '}
+                            {Number(subscription.discount_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                    </div>
+                ) : (
+                    <p className="text-green-400 font-extrabold text-xl mt-2">
+                        NPR {Number(subscription.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                )}
+
+                <div className="mt-3">
+                    {hasDiscount ? (
+                        <button
+                            type="button"
+                            onClick={removeCoupon}
+                            disabled={removingCoupon}
+                            className="text-xs font-semibold text-neutral-400 hover:text-red-400 transition disabled:opacity-60"
+                        >
+                            Remove coupon
+                        </button>
+                    ) : (
+                        <form onSubmit={applyCoupon} className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={couponForm.data.code}
+                                onChange={(e) => couponForm.setData('code', e.target.value.toUpperCase())}
+                                placeholder="Have a coupon code?"
+                                className="glass-input flex-1 text-sm py-2"
+                            />
+                            <button
+                                type="submit"
+                                disabled={couponForm.processing || !couponForm.data.code}
+                                className="glass-btn-base flex-shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/[0.09] px-4 py-2 text-sm font-semibold text-neutral-200 disabled:opacity-60"
+                            >
+                                Apply
+                            </button>
+                        </form>
+                    )}
+                    <InputError message={couponForm.errors.code} className="mt-1" />
+                </div>
 
                 <div className="mt-4 glass-panel-strong rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-line">
                     {instructions}

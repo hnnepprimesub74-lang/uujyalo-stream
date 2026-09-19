@@ -44,6 +44,9 @@ class ManageSettings extends Page implements HasForms
             'payment_instructions' => AppSetting::get('payment_instructions', "Bank Transfer: Account Name - Uujyalo Stream\nAccount No: 0000000000\nBank: Your Bank\n\nOr eSewa/Khalti Wallet: 98XXXXXXXX\n\nAfter payment, submit the reference number and screenshot below."),
             'payment_qr_code' => AppSetting::get('payment_qr_code'),
             'whatsapp_number' => AppSetting::get('whatsapp_number'),
+            'support_email' => AppSetting::get('support_email'),
+            'support_phone' => AppSetting::get('support_phone'),
+            'email_logo' => AppSetting::get('email_logo'),
         ]);
     }
 
@@ -91,12 +94,31 @@ class ManageSettings extends Page implements HasForms
                         ->helperText('Shown to customers alongside the instructions on the payment page.')
                         ->columnSpanFull(),
                 ]),
+            Section::make('Email Branding')
+                ->description('Shown at the top of every transactional email sent to customers.')
+                ->schema([
+                    FileUpload::make('email_logo')
+                        ->label('Email Logo')
+                        ->image()
+                        ->disk('public')
+                        ->directory('email-logo')
+                        ->helperText('Recommended: a square PNG/SVG logo, at least 120x120px. Leave blank to use the text brand mark.')
+                        ->columnSpanFull(),
+                ]),
             Section::make('Storefront')
                 ->description('Shown to customers on the storefront (uujyalostream.com).')
                 ->schema([
                     TextInput::make('whatsapp_number')
                         ->label('WhatsApp Number')
                         ->helperText('Include country code, e.g. 9779800000000. Leave blank to hide the WhatsApp button.')
+                        ->tel(),
+                    TextInput::make('support_email')
+                        ->label('Support Email')
+                        ->helperText('Shown to customers on the My Account page.')
+                        ->email(),
+                    TextInput::make('support_phone')
+                        ->label('Support Phone Number')
+                        ->helperText('Shown to customers on the My Account page.')
                         ->tel(),
                 ]),
         ])->statePath('data');

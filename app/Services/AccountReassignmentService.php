@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Mail\AccountReadyMail;
 use App\Models\AccountReassignmentLog;
 use App\Models\SharedAccount;
 use App\Models\Subscription;
+use Illuminate\Support\Facades\Mail;
 
 class AccountReassignmentService
 {
@@ -60,8 +62,9 @@ class AccountReassignmentService
             }
 
             $update = ['shared_account_id' => $newAccount->id];
+            $isFirstAssignment = $subscription->starts_at === null;
 
-            if ($subscription->starts_at === null) {
+            if ($isFirstAssignment) {
                 // First-ever assignment for this subscription — the
                 // countdown starts now, not back at payment approval.
                 $startsAt = now();
@@ -73,6 +76,10 @@ class AccountReassignmentService
             }
 
             $subscription->update($update);
+
+            if ($isFirstAssignment && ! str_ends_with((string) $subscription->user->email, '@no-email.local')) {
+                Mail::to($subscription->user->email)->send(new AccountReadyMail($subscription));
+            }
 
             AccountReassignmentLog::create([
                 'subscription_id' => $subscription->id,

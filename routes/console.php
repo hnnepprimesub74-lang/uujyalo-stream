@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('subscriptions:send-reminders')->dailyAt('08:00');
 Schedule::command('subscriptions:expire-unrecharged')->dailyAt('08:15');
 Schedule::command('accounts:reassign-expiring')->dailyAt('08:30');
+Schedule::command('campaigns:dispatch-due')->everyMinute();

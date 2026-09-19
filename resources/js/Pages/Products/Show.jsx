@@ -6,9 +6,11 @@ import PlanCompareCard from '@/Components/PlanCompareCard';
 import FaqAccordion from '@/Components/FaqAccordion';
 import TrendingList from '@/Components/TrendingList';
 import PerksGrid from '@/Components/PerksGrid';
+import StarRating from '@/Components/StarRating';
+import ReviewsList from '@/Components/ReviewsList';
 import { getAccentColor, contrastText } from '@/utils/theme';
 
-export default function Show({ product, relatedProducts }) {
+export default function Show({ product, relatedProducts, reviews, reviewsCount, reviewsAvg }) {
     const { auth } = usePage().props;
 
     const accent = getAccentColor(product);
@@ -254,6 +256,19 @@ export default function Show({ product, relatedProducts }) {
                         <div className="mt-8">
                             <h2 className="font-extrabold tracking-tight text-lg mb-3">Frequently Asked Questions</h2>
                             <FaqAccordion faqs={product.faqs} />
+                        </div>
+                    )}
+
+                    {reviewsCount > 0 && (
+                        <div className="mt-8">
+                            <div className="flex items-center gap-3 mb-3">
+                                <h2 className="font-extrabold tracking-tight text-lg">Customer Reviews</h2>
+                                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-amber-300">
+                                    <StarRating value={Math.round(reviewsAvg)} readOnly size="w-4 h-4" />
+                                    {reviewsAvg} ({reviewsCount})
+                                </span>
+                            </div>
+                            <ReviewsList reviews={reviews} />
                         </div>
                     )}
                 </div>

@@ -13,13 +13,15 @@ class Plan extends Model
 
     protected $fillable = [
         'product_id', 'type', 'badge_label', 'name', 'slug', 'description', 'duration_days', 'device_slots',
-        'device_slots_max', 'device_label', 'quality', 'supported_devices', 'price', 'monthly_cost', 'features', 'is_active', 'sort_order',
+        'device_slots_max', 'device_label', 'quality', 'supported_devices', 'price', 'monthly_cost', 'features',
+        'usage_rules', 'is_active', 'sort_order',
     ];
 
     protected $appends = ['full_name'];
 
     protected $casts = [
         'features' => 'array',
+        'usage_rules' => 'array',
         'is_active' => 'boolean',
         'price' => 'decimal:2',
         'monthly_cost' => 'decimal:2',

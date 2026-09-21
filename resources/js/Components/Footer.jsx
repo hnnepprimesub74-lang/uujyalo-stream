@@ -32,7 +32,7 @@ export default function Footer({ whatsappNumber }) {
                     ) : (
                         <form
                             onSubmit={submitNewsletter}
-                            className="flex items-center gap-2 flex-shrink-0 w-full md:w-auto"
+                            className="flex flex-col sm:flex-row sm:items-center gap-2 flex-shrink-0 w-full md:w-auto"
                         >
                             <input
                                 type="email"
@@ -40,11 +40,11 @@ export default function Footer({ whatsappNumber }) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="your@email.com"
-                                className="flex-1 md:w-64 rounded-full bg-white/[0.05] border border-white/10 px-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-brand-400/50"
+                                className="min-w-0 w-full sm:flex-1 md:w-64 rounded-full bg-white/[0.05] border border-white/10 px-4 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-brand-400/50"
                             />
                             <button
                                 type="submit"
-                                className="glass-btn-base flex items-center gap-2 rounded-full bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 text-sm font-bold flex-shrink-0"
+                                className="glass-btn-base flex items-center justify-center gap-2 rounded-full bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 text-sm font-bold flex-shrink-0 w-full sm:w-auto"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                                 Subscribe
@@ -56,11 +56,10 @@ export default function Footer({ whatsappNumber }) {
 
             <div className="glass-surface mt-4 rounded-t-glass border-b-0">
                 <div className="max-w-6xl mx-auto px-4 py-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <div className="sm:col-span-2 lg:col-span-1">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Logo className="w-7 h-7" />
-                                <span className="font-bold tracking-tight">Uujyalo Stream</span>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center lg:text-left">
+                        <div className="col-span-2 lg:col-span-1 flex flex-col items-center lg:items-start">
+                            <div className="flex items-center mb-3">
+                                <Logo className="h-8 w-auto rounded-md" />
                             </div>
                             <p className="text-sm text-neutral-400 max-w-xs">
                                 Nepal's trusted destination for premium subscriptions — instant delivery, easy
@@ -98,7 +97,7 @@ export default function Footer({ whatsappNumber }) {
                             </div>
                         </div>
 
-                        <div>
+                        <div className="flex flex-col items-center lg:items-start">
                             <p className="text-xs font-bold tracking-wider text-neutral-500 mb-3">QUICK LINKS</p>
                             <ul className="space-y-2 text-sm">
                                 <li><Link href={route('home')} className="text-neutral-400 hover:text-brand-400">Home</Link></li>
@@ -124,7 +123,7 @@ export default function Footer({ whatsappNumber }) {
                             </ul>
                         </div>
 
-                        <div>
+                        <div className="flex flex-col items-center lg:items-start">
                             <p className="text-xs font-bold tracking-wider text-neutral-500 mb-3">CONTACT</p>
                             <ul className="space-y-2 text-sm">
                                 {whatsappNumber && (
@@ -182,9 +181,9 @@ export default function Footer({ whatsappNumber }) {
                             </ul>
                         </div>
 
-                        <div>
+                        <div className="col-span-2 lg:col-span-1 flex flex-col items-center lg:items-start">
                             <p className="text-xs font-bold tracking-wider text-neutral-500 mb-3">WE ACCEPT</p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap justify-center lg:justify-start gap-2">
                                 <span className="px-3 py-1.5 rounded-full bg-white/[0.05] border border-white/10 text-xs font-semibold text-neutral-300">
                                     eSewa
                                 </span>
@@ -198,7 +197,7 @@ export default function Footer({ whatsappNumber }) {
                         </div>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-center sm:text-left">
                         <p className="text-xs text-neutral-600">
                             &copy; {new Date().getFullYear()} Uujyalo Stream. All rights reserved.
                         </p>

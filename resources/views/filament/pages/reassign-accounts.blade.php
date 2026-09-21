@@ -12,7 +12,7 @@
     @if ($logs->isNotEmpty())
         <div class="mt-8">
             <h2 class="text-base font-semibold mb-1">Recently Reassigned</h2>
-            <p class="text-sm text-gray-500 mb-4">Tell these customers their new login, then mark them notified.</p>
+            <p class="text-sm text-gray-500 mb-4">Customers are notified automatically — by email if they have one on file, by SMS otherwise.</p>
 
             <div class="overflow-x-auto rounded-xl ring-1 ring-gray-950/5 dark:ring-white/10">
                 <table class="w-full text-sm">
@@ -36,13 +36,7 @@
                                     @if ($log->customer_notified)
                                         <span class="text-success-600 text-xs font-semibold">✓ Notified</span>
                                     @else
-                                        <button
-                                            type="button"
-                                            wire:click="markNotified({{ $log->id }})"
-                                            class="text-xs font-semibold text-primary-600 hover:underline"
-                                        >
-                                            Mark Notified
-                                        </button>
+                                        <span class="text-danger-600 text-xs font-semibold">✗ Not notified</span>
                                     @endif
                                 </td>
                             </tr>

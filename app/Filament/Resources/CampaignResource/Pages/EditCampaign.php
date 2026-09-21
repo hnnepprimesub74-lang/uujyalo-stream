@@ -18,8 +18,19 @@ class EditCampaign extends EditRecord
         ];
     }
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['campaign_type'] = ($data['send_sms'] ?? false) ? 'sms' : 'email';
+
+        return $data;
+    }
+
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data['send_email'] = ($data['campaign_type'] ?? 'email') === 'email';
+        $data['send_sms'] = ($data['campaign_type'] ?? 'email') === 'sms';
+        unset($data['campaign_type']);
+
         $data['status'] = filled($data['scheduled_at'] ?? null) ? Campaign::STATUS_SCHEDULED : Campaign::STATUS_DRAFT;
 
         return $data;

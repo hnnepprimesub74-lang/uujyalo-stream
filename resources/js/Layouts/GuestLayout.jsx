@@ -7,9 +7,8 @@ export default function GuestLayout({ title, children }) {
             <Head title={title} />
 
             <div className="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 px-4">
-                <Link href={route('home')} className="flex items-center gap-2">
-                    <Logo className="w-12 h-12 shadow-glass-sm rounded-xl" />
-                    <span className="font-extrabold text-2xl tracking-tight">Uujyalo Stream</span>
+                <Link href={route('home')} className="flex items-center">
+                    <Logo className="h-14 w-auto shadow-glass-sm rounded-xl" />
                 </Link>
 
                 <div className="w-full sm:max-w-md mt-6 px-6 py-6 glass-panel rounded-glass overflow-hidden animate-glass-in">

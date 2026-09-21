@@ -2,24 +2,47 @@
 
 namespace App\Services;
 
-use App\Mail\AccountReadyMail;
+use App\Mail\AccountUpdatedMail;
 use App\Models\AccountReassignmentLog;
+use App\Models\NotificationLog;
 use App\Models\SharedAccount;
 use App\Models\Subscription;
+use App\Services\Sms\SmsChannelInterface;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class AccountReassignmentService
 {
+    public function __construct(protected SmsChannelInterface $sms)
+    {
+    }
+
+    /**
+     * How early a subscription shows up on the "Waiting for a New Account"
+     * list / sidebar badge — a heads-up before anything actually happens.
+     */
     public const WARNING_DAYS = 3;
+
+    /**
+     * How close to actual expiry (0 = already expired) an account has to be
+     * before run() will really swap the customer onto a new one. Kept
+     * separate from WARNING_DAYS so customers keep using their current
+     * account right up until it stops working, instead of being moved
+     * early just because it's inside the warning window.
+     */
+    public const REASSIGN_AT_DAYS = 0;
 
     /**
      * Find every active subscription on a shared-account product that needs
      * a (re)assignment: either it has no account yet (approved while no
      * stock was available) or its current account is expiring/expired within
-     * the warning window. Does not attempt reassignment — just the worklist.
+     * $withinDays. Does not attempt reassignment — just the worklist.
      */
-    public function subscriptionsNeedingAttention()
+    public function subscriptionsNeedingAttention(?int $withinDays = null)
     {
+        $withinDays ??= self::WARNING_DAYS;
+
         return Subscription::query()
             ->where('status', Subscription::STATUS_ACTIVE)
             ->where(function ($query) {
@@ -33,7 +56,7 @@ class AccountReassignmentService
             ->with(['user', 'plan.product', 'sharedAccount'])
             ->get()
             ->filter(fn (Subscription $subscription) => $subscription->shared_account_id === null
-                || $subscription->sharedAccount?->needsRotation(self::WARNING_DAYS));
+                || $subscription->sharedAccount?->needsRotation($withinDays));
     }
 
     /**
@@ -46,7 +69,7 @@ class AccountReassignmentService
         $stuck = 0;
         $touchedAccountIds = [];
 
-        foreach ($this->subscriptionsNeedingAttention() as $subscription) {
+        foreach ($this->subscriptionsNeedingAttention(self::REASSIGN_AT_DAYS) as $subscription) {
             $oldAccount = $subscription->sharedAccount;
 
             if ($oldAccount) {
@@ -77,15 +100,13 @@ class AccountReassignmentService
 
             $subscription->update($update);
 
-            if ($isFirstAssignment && ! str_ends_with((string) $subscription->user->email, '@no-email.local')) {
-                Mail::to($subscription->user->email)->send(new AccountReadyMail($subscription));
-            }
-
-            AccountReassignmentLog::create([
+            $log = AccountReassignmentLog::create([
                 'subscription_id' => $subscription->id,
                 'old_shared_account_id' => $oldAccount?->id,
                 'new_shared_account_id' => $newAccount->id,
             ]);
+
+            $log->update(['customer_notified' => $this->notifyCustomer($subscription)]);
 
             $reassigned++;
         }
@@ -93,6 +114,72 @@ class AccountReassignmentService
         $this->retireDrainedAccounts(array_keys($touchedAccountIds));
 
         return ['reassigned' => $reassigned, 'stuck' => $stuck];
+    }
+
+    /**
+     * Tell the customer their login changed — email if they have a real
+     * address on file, SMS otherwise. Returns whether it went out successfully.
+     */
+    protected function notifyCustomer(Subscription $subscription): bool
+    {
+        $user = $subscription->user;
+
+        if ($user->hasRealEmail()) {
+            try {
+                Mail::to($user->email)->send(new AccountUpdatedMail($subscription));
+            } catch (Throwable $e) {
+                Log::error('Account reassignment email failed', ['error' => $e->getMessage(), 'subscription_id' => $subscription->id]);
+
+                NotificationLog::create([
+                    'user_id' => $user->id,
+                    'subscription_id' => $subscription->id,
+                    'channel' => NotificationLog::CHANNEL_EMAIL,
+                    'type' => NotificationLog::TYPE_ACCOUNT_REASSIGNED,
+                    'status' => NotificationLog::STATUS_FAILED,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return false;
+            }
+
+            NotificationLog::create([
+                'user_id' => $user->id,
+                'subscription_id' => $subscription->id,
+                'channel' => NotificationLog::CHANNEL_EMAIL,
+                'type' => NotificationLog::TYPE_ACCOUNT_REASSIGNED,
+                'status' => NotificationLog::STATUS_SENT,
+            ]);
+
+            return true;
+        }
+
+        if (empty($user->phone)) {
+            NotificationLog::create([
+                'user_id' => $user->id,
+                'subscription_id' => $subscription->id,
+                'channel' => NotificationLog::CHANNEL_SMS,
+                'type' => NotificationLog::TYPE_ACCOUNT_REASSIGNED,
+                'status' => NotificationLog::STATUS_FAILED,
+                'response' => 'No phone number on file.',
+            ]);
+
+            return false;
+        }
+
+        $message = 'Your account has been updated. Please check our website to get your new ID and password.';
+        $result = $this->sms->send($user->phone, $message);
+
+        NotificationLog::create([
+            'user_id' => $user->id,
+            'subscription_id' => $subscription->id,
+            'channel' => NotificationLog::CHANNEL_SMS,
+            'type' => NotificationLog::TYPE_ACCOUNT_REASSIGNED,
+            'status' => $result['success'] ? NotificationLog::STATUS_SENT : NotificationLog::STATUS_FAILED,
+            'message' => $message,
+            'response' => $result['response'] ?? null,
+        ]);
+
+        return (bool) $result['success'];
     }
 
     protected function findReplacement(?SharedAccount $oldAccount, int $productId, int $slotsNeeded): ?SharedAccount

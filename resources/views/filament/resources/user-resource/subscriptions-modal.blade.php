@@ -1,7 +1,10 @@
 <div style="display:flex;flex-direction:column;gap:0.75rem;">
     @forelse ($subscriptions as $subscription)
         <div style="border-radius:0.75rem;border:1px solid rgba(127,127,127,0.25);padding:1rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#f59e0b;text-transform:uppercase;letter-spacing:0.05em;margin:0;">{{ $subscription->plan->product?->name }}</p>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <p style="font-size:0.75rem;font-weight:600;color:#f59e0b;text-transform:uppercase;letter-spacing:0.05em;margin:0;">{{ $subscription->plan->product?->name }}</p>
+                <span style="font-size:0.6875rem;font-weight:600;color:#9ca3af;">Order #{{ $subscription->order_number }}</span>
+            </div>
             <p style="font-size:1rem;font-weight:700;margin:0.125rem 0 0;">{{ $subscription->plan->full_name }}</p>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:1rem;row-gap:0.5rem;margin-top:0.75rem;font-size:0.875rem;">

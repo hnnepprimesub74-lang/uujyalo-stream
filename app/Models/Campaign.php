@@ -20,17 +20,23 @@ class Campaign extends Model
 
     public const AUDIENCE_ALL = 'all';
     public const AUDIENCE_ACTIVE_SUBSCRIBERS = 'active_subscribers';
+    public const AUDIENCE_INACTIVE = 'inactive';
     public const AUDIENCE_BY_PLAN = 'by_plan';
+    public const AUDIENCE_BY_PRODUCT = 'by_product';
 
     protected $fillable = [
         'subject', 'email_body', 'sms_body', 'send_email', 'send_sms',
-        'audience_filter', 'audience_plan_id', 'status', 'scheduled_at', 'sent_at',
+        'audience_filter', 'audience_plan_id', 'audience_product_id', 'excluded_user_ids',
+        'include_contacts', 'contact_range_start', 'contact_range_end',
+        'status', 'scheduled_at', 'sent_at',
         'total_recipients', 'sent_count', 'failed_count', 'batch_id', 'created_by',
     ];
 
     protected $casts = [
         'send_email' => 'boolean',
         'send_sms' => 'boolean',
+        'include_contacts' => 'boolean',
+        'excluded_user_ids' => 'array',
         'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
     ];
@@ -43,6 +49,11 @@ class Campaign extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class, 'audience_plan_id');
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'audience_product_id');
     }
 
     public function creator(): BelongsTo
@@ -60,14 +71,60 @@ class Campaign extends Model
             ->where('role', User::ROLE_CUSTOMER)
             ->where('is_active', true)
             ->where('marketing_opt_out', false)
+            ->when(! empty($this->excluded_user_ids), function (Builder $query) {
+                $query->whereNotIn('id', $this->excluded_user_ids);
+            })
             ->when($this->audience_filter === self::AUDIENCE_ACTIVE_SUBSCRIBERS, function (Builder $query) {
                 $query->whereHas('activeSubscriptions');
+            })
+            ->when($this->audience_filter === self::AUDIENCE_INACTIVE, function (Builder $query) {
+                $query->whereDoesntHave('activeSubscriptions');
             })
             ->when($this->audience_filter === self::AUDIENCE_BY_PLAN && $this->audience_plan_id, function (Builder $query) {
                 $query->whereHas('subscriptions', function (Builder $subscriptions) {
                     $subscriptions->where('plan_id', $this->audience_plan_id)
                         ->where('status', Subscription::STATUS_ACTIVE);
                 });
+            })
+            ->when($this->audience_filter === self::AUDIENCE_BY_PRODUCT && $this->audience_product_id, function (Builder $query) {
+                $query->whereHas('subscriptions', function (Builder $subscriptions) {
+                    $subscriptions->where('status', Subscription::STATUS_ACTIVE)
+                        ->whereHas('plan', function (Builder $plans) {
+                            $plans->where('product_id', $this->audience_product_id);
+                        });
+                });
             });
+    }
+
+    /**
+     * The base imported marketing contact pool (all non-opted-out contacts,
+     * in import order), before any range selection is applied. Used to
+     * display the total available count in the admin UI.
+     */
+    public function contactsQuery(): Builder
+    {
+        return MarketingContact::query()->where('marketing_opt_out', false)->orderBy('id');
+    }
+
+    /**
+     * The imported contact IDs this campaign will actually send to, honoring
+     * contact_range_start/contact_range_end (1-based positions in import
+     * order) when set. Materialized to an array so range slicing never has
+     * to rely on Eloquent's count()/limit() interaction.
+     */
+    public function contactsToSendIds(): array
+    {
+        $query = $this->contactsQuery();
+
+        if ($this->contact_range_start || $this->contact_range_end) {
+            $start = max(1, $this->contact_range_start ?? 1);
+            $query->skip($start - 1);
+
+            if ($this->contact_range_end) {
+                $query->take(max(0, $this->contact_range_end - $start + 1));
+            }
+        }
+
+        return $query->pluck('id')->all();
     }
 }

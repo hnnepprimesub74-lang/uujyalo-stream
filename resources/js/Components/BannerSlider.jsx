@@ -60,7 +60,7 @@ export default function BannerSlider({ banners }) {
                         type="button"
                         onClick={() => goTo(active - 1)}
                         aria-label="Previous slide"
-                        className="glass-btn-base absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass-surface text-white flex items-center justify-center"
+                        className="glass-btn-base hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass-surface text-white items-center justify-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
                     </button>
@@ -68,7 +68,7 @@ export default function BannerSlider({ banners }) {
                         type="button"
                         onClick={() => goTo(active + 1)}
                         aria-label="Next slide"
-                        className="glass-btn-base absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass-surface text-white flex items-center justify-center"
+                        className="glass-btn-base hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full glass-surface text-white items-center justify-center"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                     </button>

@@ -15,6 +15,7 @@ class NotificationLog extends Model
 
     public const TYPE_EXPIRING_SOON = 'expiring_soon';
     public const TYPE_EXPIRED = 'expired';
+    public const TYPE_ACCOUNT_REASSIGNED = 'account_reassigned';
 
     public const STATUS_SENT = 'sent';
     public const STATUS_FAILED = 'failed';

@@ -45,6 +45,7 @@ class ExpiredSubscriptions extends Page implements HasTable
                     ->orderBy('next_recharge_date', 'desc')
             )
             ->columns([
+                TextColumn::make('order_number')->label('Order ID')->copyable()->searchable(),
                 TextColumn::make('user.name')->label('Customer')->searchable()->sortable(),
                 TextColumn::make('user.phone')->label('Phone')->searchable(),
                 TextColumn::make('user.email')->label('Email')->searchable(),

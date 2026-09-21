@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Jobs\FinalizeCampaignBatch;
 use App\Jobs\SendCampaignChunk;
+use App\Jobs\SendCampaignContactChunk;
 use App\Models\Campaign;
 use Illuminate\Support\Facades\Bus;
 
@@ -12,16 +13,22 @@ class DispatchCampaignAction
     public function execute(Campaign $campaign): void
     {
         $userIds = $campaign->audienceQuery()->pluck('id')->all();
+        $contactIds = $campaign->include_contacts ? $campaign->contactsToSendIds() : [];
 
         $campaign->update([
             'status' => Campaign::STATUS_SENDING,
-            'total_recipients' => count($userIds),
+            'total_recipients' => count($userIds) + count($contactIds),
         ]);
 
-        $jobs = collect($userIds)
+        $userJobs = collect($userIds)
             ->chunk(100)
-            ->map(fn ($chunk) => new SendCampaignChunk($campaign, $chunk->values()->all()))
-            ->all();
+            ->map(fn ($chunk) => new SendCampaignChunk($campaign, $chunk->values()->all()));
+
+        $contactJobs = collect($contactIds)
+            ->chunk(100)
+            ->map(fn ($chunk) => new SendCampaignContactChunk($campaign, $chunk->values()->all()));
+
+        $jobs = $userJobs->concat($contactJobs)->all();
 
         $batch = Bus::batch($jobs)
             ->name("campaign-{$campaign->id}")

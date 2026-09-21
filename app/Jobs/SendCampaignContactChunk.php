@@ -6,7 +6,7 @@ use App\Jobs\Concerns\PersonalizesSmsBody;
 use App\Mail\CampaignMail;
 use App\Models\Campaign;
 use App\Models\CampaignDelivery;
-use App\Models\User;
+use App\Models\MarketingContact;
 use App\Services\Sms\SmsChannelInterface;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
@@ -18,14 +18,20 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Throwable;
 
-class SendCampaignChunk implements ShouldQueue
+/**
+ * Mirrors SendCampaignChunk but for imported MarketingContact recipients
+ * rather than registered Users — kept as a separate job since the two
+ * recipient types have different models, unsubscribe routes, and no
+ * "active customer" concept.
+ */
+class SendCampaignContactChunk implements ShouldQueue
 {
     use Batchable, Dispatchable, InteractsWithQueue, Queueable, SerializesModels, PersonalizesSmsBody;
 
     /**
-     * @param  array<int, int>  $userIds
+     * @param  array<int, int>  $contactIds
      */
-    public function __construct(public Campaign $campaign, public array $userIds)
+    public function __construct(public Campaign $campaign, public array $contactIds)
     {
     }
 
@@ -35,14 +41,14 @@ class SendCampaignChunk implements ShouldQueue
             return;
         }
 
-        $users = User::query()->whereIn('id', $this->userIds)->get();
+        $contacts = MarketingContact::query()->whereIn('id', $this->contactIds)->get();
 
         $sent = 0;
         $failed = 0;
 
-        foreach ($users as $user) {
+        foreach ($contacts as $contact) {
             if ($this->campaign->send_email) {
-                if ($this->sendEmail($user)) {
+                if ($this->sendEmail($contact)) {
                     $sent++;
                 } else {
                     $failed++;
@@ -50,7 +56,7 @@ class SendCampaignChunk implements ShouldQueue
             }
 
             if ($this->campaign->send_sms) {
-                if ($this->sendSms($sms, $user)) {
+                if ($this->sendSms($sms, $contact)) {
                     $sent++;
                 } else {
                     $failed++;
@@ -67,42 +73,42 @@ class SendCampaignChunk implements ShouldQueue
         }
     }
 
-    protected function sendEmail(User $user): bool
+    protected function sendEmail(MarketingContact $contact): bool
     {
-        if (empty($user->email)) {
-            $this->logDelivery($user, CampaignDelivery::CHANNEL_EMAIL, CampaignDelivery::STATUS_FAILED, 'No email on file');
+        if (empty($contact->email)) {
+            $this->logDelivery($contact, CampaignDelivery::CHANNEL_EMAIL, CampaignDelivery::STATUS_FAILED, 'No email on file');
 
             return false;
         }
 
         try {
-            $unsubscribeUrl = URL::signedRoute('marketing.unsubscribe.user', ['user' => $user->id]);
+            $unsubscribeUrl = URL::signedRoute('marketing.unsubscribe.contact', ['contact' => $contact->id]);
 
-            Mail::to($user->email)->send(new CampaignMail($this->campaign, $user->name, $unsubscribeUrl));
+            Mail::to($contact->email)->send(new CampaignMail($this->campaign, $contact->name ?? $contact->email, $unsubscribeUrl));
 
-            $this->logDelivery($user, CampaignDelivery::CHANNEL_EMAIL, CampaignDelivery::STATUS_SENT);
+            $this->logDelivery($contact, CampaignDelivery::CHANNEL_EMAIL, CampaignDelivery::STATUS_SENT);
 
             return true;
         } catch (Throwable $e) {
-            $this->logDelivery($user, CampaignDelivery::CHANNEL_EMAIL, CampaignDelivery::STATUS_FAILED, $e->getMessage());
+            $this->logDelivery($contact, CampaignDelivery::CHANNEL_EMAIL, CampaignDelivery::STATUS_FAILED, $e->getMessage());
 
             return false;
         }
     }
 
-    protected function sendSms(SmsChannelInterface $sms, User $user): bool
+    protected function sendSms(SmsChannelInterface $sms, MarketingContact $contact): bool
     {
-        if (empty($user->phone)) {
-            $this->logDelivery($user, CampaignDelivery::CHANNEL_SMS, CampaignDelivery::STATUS_FAILED, 'No phone number on file');
+        if (empty($contact->phone)) {
+            $this->logDelivery($contact, CampaignDelivery::CHANNEL_SMS, CampaignDelivery::STATUS_FAILED, 'No phone number on file');
 
             return false;
         }
 
-        $message = $this->personalizeSms((string) $this->campaign->sms_body, $user->name);
-        $result = $sms->send($user->phone, $message);
+        $message = $this->personalizeSms((string) $this->campaign->sms_body, $contact->name);
+        $result = $sms->send($contact->phone, $message);
 
         $this->logDelivery(
-            $user,
+            $contact,
             CampaignDelivery::CHANNEL_SMS,
             $result['success'] ? CampaignDelivery::STATUS_SENT : CampaignDelivery::STATUS_FAILED,
             $result['response']
@@ -114,10 +120,10 @@ class SendCampaignChunk implements ShouldQueue
         return $result['success'];
     }
 
-    protected function logDelivery(User $user, string $channel, string $status, ?string $response = null): void
+    protected function logDelivery(MarketingContact $contact, string $channel, string $status, ?string $response = null): void
     {
         CampaignDelivery::query()->updateOrCreate(
-            ['campaign_id' => $this->campaign->id, 'user_id' => $user->id, 'channel' => $channel],
+            ['campaign_id' => $this->campaign->id, 'contact_id' => $contact->id, 'channel' => $channel],
             ['status' => $status, 'response' => $response]
         );
     }

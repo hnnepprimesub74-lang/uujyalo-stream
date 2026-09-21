@@ -26,9 +26,8 @@ export default function Navbar() {
     return (
         <header className="sticky top-0 z-40 px-3 pt-3 pb-1">
             <div className="max-w-6xl mx-auto rounded-full glass-surface pl-2 pr-2 py-2 flex items-center justify-between gap-4">
-                <Link href={route('home')} className="flex items-center gap-2 flex-shrink-0">
-                    <Logo className="w-10 h-10" />
-                    <span className="font-bold text-lg tracking-tight hidden sm:inline pr-1">Uujyalo Stream</span>
+                <Link href={route('home')} className="flex items-center flex-shrink-0">
+                    <Logo className="h-9 w-auto rounded-lg" />
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-1">

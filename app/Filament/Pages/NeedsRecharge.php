@@ -57,6 +57,7 @@ class NeedsRecharge extends Page implements HasTable
                 $this->baseQuery()->where('next_recharge_date', '<=', Carbon::today()->addDays(self::LOOKAHEAD_DAYS))
             )
             ->columns([
+                TextColumn::make('order_number')->label('Order ID')->copyable()->searchable(),
                 TextColumn::make('user.name')->label('Customer')->searchable(),
                 TextColumn::make('user.phone')->label('Phone'),
                 TextColumn::make('plan.product.name')->label('Product')->badge(),

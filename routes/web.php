@@ -16,9 +16,12 @@ Route::get('/products/{product:slug}', [PlanController::class, 'show'])->name('p
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews');
 Route::get('/about', fn () => Inertia::render('About'))->name('about');
 
-Route::get('/marketing/unsubscribe/{user}', [MarketingUnsubscribeController::class, 'unsubscribe'])
+Route::get('/marketing/unsubscribe/user/{user}', [MarketingUnsubscribeController::class, 'unsubscribeUser'])
     ->middleware('signed')
-    ->name('marketing.unsubscribe');
+    ->name('marketing.unsubscribe.user');
+Route::get('/marketing/unsubscribe/contact/{contact}', [MarketingUnsubscribeController::class, 'unsubscribeContact'])
+    ->middleware('signed')
+    ->name('marketing.unsubscribe.contact');
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

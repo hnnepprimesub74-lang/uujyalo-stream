@@ -81,6 +81,15 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === self::ROLE_ADMIN;
     }
 
+    /**
+     * Phone-only signups get a placeholder "@no-email.local" address so the
+     * required, unique `email` column still has something in it.
+     */
+    public function hasRealEmail(): bool
+    {
+        return ! str_ends_with((string) $this->email, '@no-email.local');
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->isAdmin();

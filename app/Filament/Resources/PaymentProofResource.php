@@ -76,6 +76,7 @@ class PaymentProofResource extends Resource
                         ->groupBy('subscription_id');
                 }))
             ->columns([
+                TextColumn::make('subscription.order_number')->label('Order ID')->copyable()->searchable(),
                 TextColumn::make('user.name')->searchable()->sortable(),
                 TextColumn::make('user.phone')->label('Phone')->searchable(),
                 TextColumn::make('subscription.plan.full_name')->label('Plan')->wrap(),

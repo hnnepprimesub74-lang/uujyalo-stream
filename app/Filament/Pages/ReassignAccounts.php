@@ -59,11 +59,6 @@ class ReassignAccounts extends Page implements HasTable
         $this->resetTable();
     }
 
-    public function markNotified(int $logId): void
-    {
-        AccountReassignmentLog::where('id', $logId)->update(['customer_notified' => true]);
-    }
-
     public function getRecentLogs()
     {
         return AccountReassignmentLog::with(['subscription.user', 'oldSharedAccount', 'newSharedAccount'])
@@ -101,6 +96,7 @@ class ReassignAccounts extends Page implements HasTable
             ->heading('Waiting for a New Account')
             ->description('These customers have no account yet, or their current account is expiring or expired. They\'ll be moved automatically once you add stock with free slots.')
             ->columns([
+                TextColumn::make('order_number')->label('Order ID')->copyable()->searchable(),
                 TextColumn::make('user.name')->label('Customer')->searchable(),
                 TextColumn::make('user.phone')->label('Phone'),
                 TextColumn::make('plan.product.name')->label('Product')->badge(),

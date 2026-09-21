@@ -150,6 +150,7 @@ class SubscriptionResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('order_number')->label('Order ID')->copyable()->searchable(),
                 TextColumn::make('user.name')->label('Customer')->searchable()->sortable(),
                 TextColumn::make('plan.product.name')->label('Product')->badge(),
                 TextColumn::make('plan.full_name')->label('Plan'),

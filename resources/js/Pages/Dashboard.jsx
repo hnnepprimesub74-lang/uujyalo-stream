@@ -100,7 +100,12 @@ export default function Dashboard({ activeSubscriptions, subscriptions }) {
                         <div key={sub.id} className="rounded-2xl glass-panel-strong p-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-xs font-semibold text-brand-400 uppercase tracking-wide">{sub.product_name}</p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="text-xs font-semibold text-brand-400 uppercase tracking-wide">{sub.product_name}</p>
+                                        <span className="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded-full bg-brand-400/10 border border-brand-400/25 text-brand-400">
+                                            Order #{sub.order_number}
+                                        </span>
+                                    </div>
                                     <p className="text-lg font-bold">{sub.plan_name}</p>
                                 </div>
                                 <ReviewButton sub={sub} onClick={() => setReviewingSub(sub)} />
@@ -151,7 +156,12 @@ export default function Dashboard({ activeSubscriptions, subscriptions }) {
                         <div key={sub.id} className="rounded-2xl glass-panel p-4">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <p className="text-xs font-semibold text-brand-400 uppercase tracking-wide">{sub.product_name}</p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="text-xs font-semibold text-brand-400 uppercase tracking-wide">{sub.product_name}</p>
+                                        <span className="text-[11px] font-bold tracking-wide px-2 py-0.5 rounded-full bg-brand-400/10 border border-brand-400/25 text-brand-400">
+                                            Order #{sub.order_number}
+                                        </span>
+                                    </div>
                                     <p className="font-semibold">{sub.plan_name}</p>
                                     {sub.awaiting_activation ? (
                                         <p className="text-xs font-semibold text-brand-400 mt-1">

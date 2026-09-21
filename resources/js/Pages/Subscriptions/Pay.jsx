@@ -85,7 +85,10 @@ export default function Pay({ subscription, instructions, qrCodeUrl, needsInfoNo
             ) : null}
 
             <div className="rounded-2xl glass-panel p-4 mb-4">
-                <p className="font-semibold">{subscription.plan.full_name}</p>
+                <span className="inline-block text-[11px] font-bold tracking-wide px-2 py-0.5 rounded-full bg-brand-400/10 border border-brand-400/25 text-brand-400">
+                    Order #{subscription.order_number}
+                </span>
+                <p className="font-semibold mt-1.5">{subscription.plan.full_name}</p>
                 <p className="text-sm text-neutral-400 mt-0.5">{subscription.plan.duration_days} days access</p>
 
                 {hasDiscount ? (

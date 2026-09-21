@@ -27,6 +27,7 @@ class DashboardController extends Controller
             ->get()
             ->map(fn (Subscription $subscription) => [
                 'id' => $subscription->id,
+                'order_number' => $subscription->order_number,
                 'product_name' => $subscription->plan->product?->name,
                 'plan_name' => $subscription->plan->full_name,
                 'usage_rules' => $subscription->plan->usage_rules ?? [],
@@ -55,6 +56,7 @@ class DashboardController extends Controller
 
                 return [
                     'id' => $subscription->id,
+                    'order_number' => $subscription->order_number,
                     'product_name' => $subscription->plan->product?->name,
                     'plan_name' => $subscription->plan->full_name,
                     'status' => $subscription->status,

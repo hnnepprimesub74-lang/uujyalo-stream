@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CampaignResource\RelationManagers;
 
+use App\Models\CampaignDelivery;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\BadgeColumn;
@@ -24,8 +25,17 @@ class CampaignDeliveriesRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                TextColumn::make('user.name')->searchable()->sortable(),
-                TextColumn::make('user.email')->label('Email')->searchable(),
+                TextColumn::make('recipient')
+                    ->label('Recipient')
+                    ->state(fn (CampaignDelivery $record) => $record->recipientName()),
+                TextColumn::make('recipient_contact')
+                    ->label('Email / Phone')
+                    ->state(fn (CampaignDelivery $record) => $record->user?->email ?? $record->contact?->email ?? $record->contact?->phone ?? '—'),
+                TextColumn::make('source')
+                    ->label('Source')
+                    ->state(fn (CampaignDelivery $record) => $record->user_id ? 'Customer' : 'Imported Contact')
+                    ->badge()
+                    ->color(fn (CampaignDelivery $record) => $record->user_id ? 'gray' : 'purple'),
                 BadgeColumn::make('channel')->colors([
                     'info' => 'email',
                     'success' => 'sms',

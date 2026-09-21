@@ -15,7 +15,7 @@ class CampaignDelivery extends Model
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
-        'campaign_id', 'user_id', 'channel', 'status', 'response',
+        'campaign_id', 'user_id', 'contact_id', 'channel', 'status', 'response',
     ];
 
     public function campaign(): BelongsTo
@@ -26,5 +26,18 @@ class CampaignDelivery extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(MarketingContact::class, 'contact_id');
+    }
+
+    /**
+     * The recipient's display name, whichever type this delivery is for.
+     */
+    public function recipientName(): string
+    {
+        return $this->user?->name ?? $this->contact?->name ?? $this->contact?->email ?? $this->contact?->phone ?? '—';
     }
 }
